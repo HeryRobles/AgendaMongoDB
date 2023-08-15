@@ -1,4 +1,5 @@
 ﻿using AgendaMongoDB;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Text.RegularExpressions;
 
@@ -8,7 +9,7 @@ IMongoDatabase database = client.GetDatabase("agenda");
 //Coleccion = tabla
 IMongoCollection<Contacto> collection = database.GetCollection<Contacto>("contactos");
 
-
+-
 string directorio = $"{Environment.CurrentDirectory}\\Data";
 try
 {
@@ -29,6 +30,10 @@ try
         InsertarJson(archivo);
         InsertarCsv(archivo);
     }
+
+    RealizarConsultas(collection);
+    ActualizarRegistros(collection);
+    EliminarRegistros(collection);
 }
 catch (Exception ex)
 {
@@ -82,8 +87,48 @@ List<Contacto> InsertarJson(string archivo)
     Console.WriteLine("Proceso Terminado");
     return new List<Contacto>();
 }
+static void RealizarConsultas(IMongoCollection<Contacto> collection)
+{
+    //Obtener todos los contactos en orden ascendente
+    var consulta1 = collection.Find(new BsonDocument())
+        .Sort(Builders<Contacto>.Sort.Ascending("Name")).ToList();
 
+    //Obtener los contactos de Mexico
+    var consulta2 = collection.Find(Builders<Contacto>
+        .Filter.Eq("country", "Mexico"))
+        .ToList();
 
+    var consulta3 = collection.Find(Builders<Contacto>
+        .Filter.Gt("datebirth", new DateTime(1990,1,1)))
+        .ToList();
+
+    var consulta4 = collection.Find(Builders<Contacto>
+        .Filter.Regex("email", new BsonRegularExpression(".+@.+\'hotmail.com'+")))
+        .ToList();
+
+    List<Contacto> consulta5 = collection.Find(c3 => c3.Phone.Contains("123"))
+        .ToList();
+
+    //Obtener todos los contactos en orden ascendente
+    //List<Contacto> consulta1 = collection.Find(c1 => c1.Name =="name")
+    //    .SortBy(c1 => c1.Country)
+    //    .ToList();
+}
+
+static void ActualizarRegistros(IMongoCollection<Contacto> collection)
+{
+    //Actualizar el nombre de los contactos con nombre: Melanie
+    var filter = Builders<Contacto>.Filter.Eq("name", "Melanie");
+    var update = Builders<Contacto>.Update.Set("name", "Wanda");
+    collection.UpdateMany(filter, update);
+}
+
+static void EliminarRegistros(IMongoCollection<Contacto> collection)
+{
+    //Eliminar los registros de los que sean Peruanos xd
+    var deleteFilter = Builders<Contacto>.Filter.Eq("country", "Peru");
+    collection.DeleteMany(deleteFilter);
+}
 
 
 
